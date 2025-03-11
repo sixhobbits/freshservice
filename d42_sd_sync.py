@@ -266,6 +266,9 @@ def update_objects_from_server(sources, _target, mapping):
                 if isinstance(mapping["field"], dict):
                     mapping["field"] = [mapping["field"]]
 
+                # Custom
+                asset_state_field_name = None
+
                 # validation
                 for map_info in mapping["field"]:
                     if error_skip and "@error-skip" in map_info and map_info["@error-skip"]:
@@ -274,6 +277,10 @@ def update_objects_from_server(sources, _target, mapping):
                     asset_type_field = get_asset_type_field_from_map(asset_type_fields_map, asset_type_id, asset_type_fields, map_info)
                     if asset_type_field is None:
                         continue
+
+                    # Custom
+                    if map_info["@target"] == "asset_state":
+                        asset_state_field_name = asset_type_field["name"]
 
                     value = get_map_value_from_device42(source, map_info)
 
@@ -375,6 +382,11 @@ def update_objects_from_server(sources, _target, mapping):
                     # same value over and that will avoid this error.
                     if source["asset_type"] == ASSET_TYPE_BUSINESS_SERVICE and "agent_id" in existing_object and existing_object["agent_id"]:
                         data["agent_id"] = existing_object["agent_id"]
+
+                    # Custom
+                    if asset_state_field_name:
+                        data["type_fields"].pop(asset_state_field_name, None)
+
                     updated_asset_id = freshservice.update_asset(data, existing_object["display_id"])
                     logger.info("updated existing asset %d" % updated_asset_id)
                     # If the asset type changed for this asset, update it in the cache.
